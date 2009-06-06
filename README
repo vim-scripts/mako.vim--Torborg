@@ -1,0 +1,7 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=2663
+
+Adds indenting support for the mako python template engine to vim. Indents inside of Mako control blocks, which improves the readability of the source template (although at the possible expense of the readability of the output code).
+
+For best results, use in conjunction with mako syntax highlighting: vimscript #1858.
+
+Mako: http://www.makotemplates.org/
