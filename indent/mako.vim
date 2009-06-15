@@ -1,16 +1,22 @@
 " Vim indent file
 " Language: Mako
 " Author: Scott Torborg <storborg@mit.edu>
-" Version: 0.1
+" Version: 0.2
 "
 " This script does more useful indenting for Mako HTML templates. It indents
-" inside of control blocks, defs, etc.
+" inside of control blocks, defs, etc. Note that this indenting style will
+" sacrifice readability of the output text for the sake of readability of the
+" template.
 "
 " We'll use HTML indenting globally, python inside <% %> blocks. Inspired by
 " the excellent PHP + HTML indentation files such as php.vim by Pim Snel.
 "
-" Known Issues: * Doesn't indent properly after lines that have an open and
-"                 close element on the same line.
+" Changelog:
+"       0.2 - 15 June 2009
+"       - Fixed issue where opening and closing mako tags on the same line
+"       would cause incorrect indenting
+"       0.1 - 06 June 2009
+"       - Initial public release of mako indent file
 
 let sw=2    " default shiftwidth of 2 spaces
 
@@ -74,15 +80,15 @@ function GetMakoIndent()
 	let ind = indent(lnum) + (&sw * ind)
     
     " Indent after %anything: or <%anything NOT ending in />
-    if line =~ '^\s*%.*:\s*$' || line =~ '^\s*<%.*[^/]>$'
+    if line =~ '^\s*%.*:\s*$'
         let ind = ind + &sw
     endif
     
     " Unindent before %end* or </%anything
-    if cline =~ '^\s*%\s*end' || cline =~ '^\s*<\/%.*'
+    if cline =~ '^\s*%\s*end'
         let ind = ind - &sw
     endif
-    
+    "
     " Unindent before %else, %except, and %elif
     if cline =~ '^\s*%\s*else' || cline =~ '^\s*%\s*except' || cline =~ '^\s*%\s*elif'
         let ind = ind - &sw
@@ -92,7 +98,7 @@ function GetMakoIndent()
     if line =~ '<%$'
         let ind = ind + &sw
     endif
-    
+    "
     " Unindent at the end of the python block.
     if cline =~ '^\s*%>$'
         let scanlnum = lnum
@@ -119,12 +125,19 @@ endfunction
 " [-- helper function to assemble tag list --]
 fun! <SID>HtmlIndentPush(tag)
     if exists('g:html_indent_tags')
-	let g:html_indent_tags = g:html_indent_tags.'\|'.a:tag
+        let g:html_indent_tags = g:html_indent_tags.'\|'.a:tag
     else
-	let g:html_indent_tags = a:tag
+        let g:html_indent_tags = a:tag
     endif
 endfun
 
+fun! <SID>MakoIndentPush(tag)
+    if exists('g:mako_indent_tags')
+        let g:mako_indent_tags = g:mako_indent_tags.'\|'.a:tag
+    else
+        let g:mako_indent_tags = a:tag
+    endif
+endfun
 
 " [-- <ELEMENT ? - - ...> --]
 call <SID>HtmlIndentPush('a')
@@ -215,9 +228,37 @@ if !exists('g:html_indent_strict_table')
     call <SID>HtmlIndentPush('thead')
 endif
 
+" [-- <Mako Elements> --]
+call <SID>MakoIndentPush('%def')
+call <SID>MakoIndentPush('%call')
+call <SID>MakoIndentPush('%doc')
+call <SID>MakoIndentPush('%text')
+call <SID>MakoIndentPush('%.\+:.\+')
+
 delfun <SID>HtmlIndentPush
+delfun <SID>MakoIndentPush
 
 set cpo-=C
+
+" [-- get number of regex matches in a string --]
+fun! <SID>MatchCount(expr, pat)
+    let mpos = 0
+    let mcount = 0
+    let expr = a:expr
+    while (mpos > -1)
+        let mend = matchend(expr, a:pat)
+        if mend > -1
+            let mcount = mcount + 1
+        endif
+        if mend == mpos
+            let mpos = mpos + 1
+        else
+            let mpos = mend
+        endif
+        let expr = strpart(expr, mpos)
+    endwhile
+    return mcount
+endfun
 
 " [-- count indent-increasing tags of line a:lnum --]
 fun! <SID>HtmlIndentOpen(lnum)
@@ -235,6 +276,20 @@ fun! <SID>HtmlIndentClose(lnum)
     return strlen(s)
 endfun
 
+" [-- count indent-increasing mako tags of line a:lnum --]
+fun! <SID>MakoIndentOpen(lnum)
+    let s = substitute('x'.getline(a:lnum),
+    \ '.\{-}\(\(<\)\('.g:mako_indent_tags.'\)\>\)', "\1", 'g')
+    let s = substitute(s, "[^\1].*$", '', '')
+    return strlen(s)
+endfun
+
+" [-- count indent-decreasing mako tags of line a:lnum --]
+fun! <SID>MakoIndentClose(lnum)
+    let mcount = <SID>MatchCount(getline(a:lnum), '</\('.g:mako_indent_tags.'\)>')
+    return mcount
+endfun
+
 " [-- count indent-increasing '{' of (java|css) line a:lnum --]
 fun! <SID>HtmlIndentOpenAlt(lnum)
     return strlen(substitute(getline(a:lnum), '[^{]\+', '', 'g'))
@@ -247,14 +302,14 @@ endfun
 
 " [-- return the sum of indents respecting the syntax of a:lnum --]
 fun! <SID>HtmlIndentSum(lnum, style)
+    let open = <SID>HtmlIndentOpen(a:lnum) + <SID>MakoIndentOpen(a:lnum)
+    let close = <SID>HtmlIndentClose(a:lnum) + <SID>MakoIndentClose(a:lnum)
     if a:style == match(getline(a:lnum), '^\s*</')
-	if a:style == match(getline(a:lnum), '^\s*</\<\('.g:html_indent_tags.'\)\>')
-	    let open = <SID>HtmlIndentOpen(a:lnum)
-	    let close = <SID>HtmlIndentClose(a:lnum)
-	    if 0 != open || 0 != close
-		return open - close
-	    endif
-	endif
+        if a:style == match(getline(a:lnum), '^\s*</\('.g:html_indent_tags.'\|'.g:mako_indent_tags.'\)')
+            if 0 != open || 0 != close
+                return open - close
+            endif
+        endif
     endif
     if '' != &syntax &&
 	\ synIDattr(synID(a:lnum, 1, 1), 'name') =~ '\(css\|java\).*' &&
