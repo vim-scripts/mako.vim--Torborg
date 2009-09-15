@@ -1,7 +1,7 @@
 " Vim indent file
 " Language: Mako
 " Author: Scott Torborg <storborg@mit.edu>
-" Version: 0.2
+" Version: 0.3
 "
 " This script does more useful indenting for Mako HTML templates. It indents
 " inside of control blocks, defs, etc. Note that this indenting style will
@@ -12,6 +12,9 @@
 " the excellent PHP + HTML indentation files such as php.vim by Pim Snel.
 "
 " Changelog:
+"       0.3 - 15 September 2009
+"       - Added explicit indenting for ## comments, fixed unindenting count,
+"       thanks to Mike Lewis (@MikeRLewis) for this
 "       0.2 - 15 June 2009
 "       - Fixed issue where opening and closing mako tags on the same line
 "       would cause incorrect indenting
@@ -67,6 +70,9 @@ function GetMakoIndent()
     let cline = getline(v:lnum)     " current line
     let pline = getline(lnum - 1)   " previous to last line
     let ind = indent(lnum)
+	if line =~ '^\s*##'
+		return indent(lnum)
+	end
     
     let restore_ic=&ic
     let &ic=1 " ignore case
@@ -287,6 +293,7 @@ endfun
 " [-- count indent-decreasing mako tags of line a:lnum --]
 fun! <SID>MakoIndentClose(lnum)
     let mcount = <SID>MatchCount(getline(a:lnum), '</\('.g:mako_indent_tags.'\)>')
+    let mcount = mcount + <SID>MatchCount(getline(a:lnum), '<\('.g:mako_indent_tags.'\)[^>]*/>')
     return mcount
 endfun
 
