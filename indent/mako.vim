@@ -1,7 +1,26 @@
 " Vim indent file
 " Language: Mako
 " Author: Scott Torborg <storborg@mit.edu>
-" Version: 0.3
+" Version: 0.4
+" License: Do What The Fuck You Want To Public License (WTFPL)
+"
+" ---------------------------------------------------------------------------
+"
+"            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+"                    Version 2, December 2004
+"
+" Copyright (C) 2004 Sam Hocevar <sam@hocevar.net>
+"
+" Everyone is permitted to copy and distribute verbatim or modified
+" copies of this license document, and changing it is allowed as long
+" as the name is changed.
+"
+"            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+"   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+"
+"  0. You just DO WHAT THE FUCK YOU WANT TO.
+"
+" ---------------------------------------------------------------------------
 "
 " This script does more useful indenting for Mako HTML templates. It indents
 " inside of control blocks, defs, etc. Note that this indenting style will
@@ -12,6 +31,8 @@
 " the excellent PHP + HTML indentation files such as php.vim by Pim Snel.
 "
 " Changelog:
+"       0.4 - 5 March 2010
+"       - Added license information
 "       0.3 - 15 September 2009
 "       - Added explicit indenting for ## comments, fixed unindenting count,
 "       thanks to Mike Lewis (@MikeRLewis) for this
